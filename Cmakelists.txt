@@ -1,0 +1,54 @@
+cmake_minimum_required(VERSION 3.15)
+project(limitless VERSION 0.1.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# ---------------------------------------------------------------------------
+# Core C++ library
+# ---------------------------------------------------------------------------
+add_library(limitless_core
+    src/limiter.cpp
+    src/store.cpp
+    src/tokens.cpp
+)
+
+target_include_directories(limitless_core
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+
+# ---------------------------------------------------------------------------
+# C++ example executable
+# ---------------------------------------------------------------------------
+add_executable(basic_usage examples/basic_usage.cpp)
+target_link_libraries(basic_usage PRIVATE limitless_core)
+
+# ---------------------------------------------------------------------------
+# Python bindings via pybind11  (optional — only built if pybind11 is found)
+# ---------------------------------------------------------------------------
+find_package(pybind11 QUIET)
+
+if(pybind11_FOUND)
+    message(STATUS "pybind11 found — building Python bindings")
+    pybind11_add_module(limitless src/bindings.cpp)
+    target_link_libraries(limitless PRIVATE limitless_core)
+else()
+    message(STATUS "pybind11 not found — skipping Python bindings")
+    message(STATUS "Install with: pip install pybind11")
+endif()
+
+# ---------------------------------------------------------------------------
+# Install rules
+# ---------------------------------------------------------------------------
+install(TARGETS limitless_core EXPORT limitlessTargets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+)
+install(DIRECTORY include/ DESTINATION include)
+install(EXPORT limitlessTargets
+    FILE limitlessConfig.cmake
+    NAMESPACE limitless::
+    DESTINATION lib/cmake/limitless
+)
